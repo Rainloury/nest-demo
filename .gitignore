@@ -54,3 +54,13 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+.workbuddy
+.claude
+.windsurf
+.agents
+skills-lock.json
+
+# TypeScript 增量编译缓存
+*.tsbuildinfo
+/src/generated
+/src/generated/prisma

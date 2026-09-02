@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+// 客户端生成配置
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  // 项目 tsconfig 是 nodenext，相对导入必须带扩展名；
+  // 写 ts 后由 rewriteRelativeImportExtensions 在 emit 时改写成 .js
+  importFileExtension = "ts"
+}
+
+// 数据库连接配置
+datasource db {
+  // provider 指定数据库类型
+  // 可选值：postgresql | mysql | sqlite | sqlserver | mongodb
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Article {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  author    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

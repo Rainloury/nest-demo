@@ -3,6 +3,8 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,
@@ -15,7 +17,11 @@
     "outDir": "./dist",
     "incremental": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
     "types": ["vitest/globals", "node"]
   }
