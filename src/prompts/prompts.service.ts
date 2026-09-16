@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { config } from '../config.js';
+import { config } from '../config.ts';
 import { ChatOllama } from '@langchain/ollama';
 import { ChatPromptTemplate, FewShotPromptTemplate, PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';

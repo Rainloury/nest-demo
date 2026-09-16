@@ -6,18 +6,19 @@ import { CreateArticleDto } from './dto/create-article.dto.ts';
 export class ArticleService {
   constructor(private readonly prisma: PrismaService) {}
 
-  getArticleList() {
-    return this.prisma.article.findMany({
+  async getArticleList() {
+    const result = await this.prisma.article.findMany({
       orderBy: { createdAt: 'desc' },
     });
+    return { message: 'success', data: result };
   }
 
-  getArticleById(id: number) {
-    return this.prisma.article.findUnique({ where: { id } });
+  async getArticleById(id: number) {
+    return await this.prisma.article.findUnique({ where: { id } });
   }
 
-  createArticle(dto: CreateArticleDto) {
-    return this.prisma.article.create({
+  async createArticle(dto: CreateArticleDto) {
+    return await this.prisma.article.create({
       data: {
         title: dto.title,
         content: dto.content,

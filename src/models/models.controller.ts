@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Res } from '@nestjs/common';
-import { ModelsService } from './models.service.js';
+import { ModelsService } from './models.service.ts';
 import type { Response } from 'express';
 
 @Controller('models')

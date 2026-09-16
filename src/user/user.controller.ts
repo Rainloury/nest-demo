@@ -5,7 +5,7 @@ import { CreateUserDto } from './dto/create-user.dto.ts';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-  @Get('user')
+  @Get('getUserList')
   getUserList(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('size', new DefaultValuePipe(10), ParseIntPipe) size: number,
@@ -17,19 +17,15 @@ export class UserController {
     return this.userService.getUserList(safePage, safeSize);
   }
 
-  @Post('user')
+  @Post('createUser')
   create(@Body() dto: CreateUserDto) {
-    // 防御性脱敏：服务端会将 password 原样回显，返回前剔除敏感字段
     const result = this.userService.createUser(dto) as {
       data?: Record<string, unknown>;
     };
-    if (result.data) {
-      delete result.data['password'];
-    }
     return result;
   }
 
-  @Get('user/:id')
+  @Get('getUserById/:id')
   getUserById(@Param('id') id: string) {
     return this.userService.getUserById(id);
   }

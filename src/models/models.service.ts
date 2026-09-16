@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ChatOllama } from '@langchain/ollama';
-import { config } from '../config.js';
+import { config } from '../config.ts';
 import type { Response } from 'express';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { StringOutputParser } from '@langchain/core/output_parsers';

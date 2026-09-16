@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PromptsService } from './prompts.service.js';
+import { PromptsService } from './prompts.service.ts';
 
 describe('PromptsService', () => {
   let service: PromptsService;
