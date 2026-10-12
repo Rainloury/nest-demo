@@ -7,11 +7,6 @@ import { PrismaService } from './../src/prisma/prisma.service.ts';
 // AppModule 注册了 PrismaModule，e2e 启动时 onModuleInit 会 $connect() 连真实数据库。
 // 用假的 PrismaService 顶掉，保证 e2e 不依赖外部数据库是否可达。
 const mockPrisma = {
-  article: {
-    findMany: vi.fn().mockResolvedValue([]),
-    findUnique: vi.fn().mockResolvedValue(null),
-    create: vi.fn().mockResolvedValue({ id: 1 }),
-  },
   $connect: vi.fn().mockResolvedValue(undefined),
   $disconnect: vi.fn().mockResolvedValue(undefined),
 };

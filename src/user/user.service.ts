@@ -2,6 +2,8 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '../generated/prisma/client.ts';
 import { PrismaService } from '../prisma/prisma.service.ts';
 import { CreateUserDto } from './dto/create-user.dto.ts';
+import { QueryUserDto } from './dto/query-user.dto.ts';
+import { UpdateUserDto } from './dto/update-user.dto.ts';
 
 /**
  * 唯一约束冲突（P2002）时，把“冲突的是哪个字段/索引”的线索汇总成一个字符串。
@@ -49,45 +51,22 @@ function collectConflictSignals(error: Prisma.PrismaClientKnownRequestError): st
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getUserList(page: number, size: number) {
-    const currentPage = page || 1;
-    const pageSize = size || 10;
-    const skip = (currentPage - 1) * pageSize;
-
-    // 数组形式的事务：count 与 findMany 在同一个事务里一次性下发，
-    // 保证 total 和当前页数据来自同一个数据库快照（避免并发写入导致两者对不上）。
-    const [total, data] = await this.prisma.$transaction([
-      this.prisma.user.count(),
-      this.prisma.user.findMany({
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: pageSize,
-      }),
-    ]);
-
-    return {
-      page: currentPage,
-      size: pageSize,
-      total,
-      data,
-      message: `第 ${currentPage} 页，每页 ${pageSize} 条`,
-    };
-  }
-
+  // 创建用户
   async createUser(dto: CreateUserDto) {
     try {
-      const data = await this.prisma.user.create({
+      const user = await this.prisma.user.create({
         data: {
           name: dto.name,
           email: dto.email,
           password: dto.password,
+          role: dto.role ?? 'user',
         },
       });
       return {
         success: true,
         message: '创建用户成功',
         timestamp: new Date().toISOString(),
-        data,
+        data: user,
       };
     } catch (error) {
       // email 上有 @unique，重复注册会抛 P2002，转成 409 而不是 500
@@ -110,7 +89,55 @@ export class UserService {
     }
   }
 
-  async getUserById(id: string) {
+  async getUserList(query: QueryUserDto) {
+    const currentPage = Number(query.page) || 1;
+    const pageSize = Math.min(Number(query.size) || 10, 100);
+    const skip = (currentPage - 1) * pageSize;
+
+    const where: Prisma.UserWhereInput = {};
+    if (query.name) {
+      where.name = { contains: query.name, mode: 'insensitive' };
+    }
+    if (query.role) {
+      where.role = query.role;
+    }
+
+    // 数组形式的事务：count 与 findMany 在同一个事务里一次性下发，
+    // 保证 total 和当前页数据来自同一个数据库快照（避免并发写入导致两者对不上）。
+    const [total, list] = await this.prisma.$transaction([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: pageSize,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+          // password 不返回给前端
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / pageSize);
+    return {
+      pagination: {
+        page: currentPage,
+        size: pageSize,
+        total,
+        totalPages,
+        hasNext: currentPage < totalPages,
+        hasPrev: currentPage > 1,
+      },
+      list,
+    };
+  }
+
+  async getUserById(id: number) {
     // 路由参数是 string，Number('abc') 会得到 NaN，
     // 直接丢给 Prisma 只会得到一个难懂的参数类型错误，这里先拦掉。
     const userId = Number(id);
@@ -122,29 +149,99 @@ export class UserService {
       });
     }
 
-    try {
-      const data = await this.prisma.user.findFirstOrThrow({
-        where: {
-          id: userId,
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true, // 联表查询该用户的所有文章
+        posts: {
+          select: {
+            id: true,
+            title: true,
+            published: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
         },
+      },
+    });
+    if (!user) {
+      throw new NotFoundException({
+        success: false,
+        message: `用户 ${userId} 不存在`,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return {
+      success: true,
+      message: `获取用户${id}成功`,
+      timestamp: new Date().toISOString(),
+      data: user,
+    };
+  }
+
+  // 更新用户
+  async updateUser(id: number, dto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException({
+        success: false,
+        message: `用户 ${id} 不存在`,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { id },
+        data: dto,
+        select: { id: true, name: true, email: true, role: true, createdAt: true, updatedAt: true },
       });
       return {
         success: true,
-        message: `获取用户${id}成功`,
+        message: `更新用户${id}成功`,
         timestamp: new Date().toISOString(),
-        data,
+        data: updatedUser,
       };
     } catch (error) {
-      // findFirstOrThrow 查不到记录时抛 P2025，转成 404 而不是 500
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new NotFoundException({
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const signals = collectConflictSignals(error);
+        if (signals.includes('email')) {
+          throw new ConflictException({
+            success: false,
+            message: `邮箱 ${dto.email} 已被注册`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        throw new ConflictException({
           success: false,
-          message: `用户 ${userId} 不存在`,
+          message: '数据已存在，违反唯一约束',
           timestamp: new Date().toISOString(),
         });
       }
-      // 兜底：数据库连接失败等其它异常原样抛出，交给全局异常过滤器返回 500
       throw error;
     }
+  }
+
+  // 删除用户
+  async removeUser(id: number) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException({
+        success: false,
+        message: `用户 ${id} 不存在`,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    await this.prisma.user.delete({ where: { id } });
+    return {
+      success: true,
+      message: `删除用户${id}成功`,
+      timestamp: new Date().toISOString(),
+    };
   }
 }

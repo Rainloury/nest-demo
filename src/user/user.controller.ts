@@ -1,32 +1,35 @@
-import { Body, Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
 import { UserService } from './user.service.ts';
 import { CreateUserDto } from './dto/create-user.dto.ts';
+import { UpdateUserDto } from './dto/update-user.dto.ts';
+import { QueryUserDto } from './dto/query-user.dto.ts';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-  @Get('getUserList')
-  getUserList(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('size', new DefaultValuePipe(10), ParseIntPipe) size: number,
-  ) {
-    // 边界校验：页码与每页条数必须为合法正整数，越界/非法入参回退默认值
-    const safePage = page > 0 ? page : 1;
-    const safeSize = size > 0 && size <= 100 ? size : 10;
 
-    return this.userService.getUserList(safePage, safeSize);
-  }
-
-  @Post('createUser')
+  @Post('create')
   create(@Body() dto: CreateUserDto) {
-    const result = this.userService.createUser(dto) as {
-      data?: Record<string, unknown>;
-    };
-    return result;
+    return this.userService.createUser(dto);
   }
 
-  @Get('getUserById/:id')
-  getUserById(@Param('id') id: string) {
+  @Get('list')
+  getUserList(@Query() query: QueryUserDto) {
+    return this.userService.getUserList(query);
+  }
+
+  @Get(':id')
+  getUserById(@Param('id', ParseIntPipe) id: number) {
     return this.userService.getUserById(id);
+  }
+
+  @Put(':id')
+  updateUser(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserDto) {
+    return this.userService.updateUser(id, dto);
+  }
+
+  @Delete(':id')
+  removeUser(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.removeUser(id);
   }
 }

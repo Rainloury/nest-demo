@@ -7,7 +7,7 @@ export class PromptsController {
 
   @Post('translate')
   translate(@Body() body: { text: string; targetLanguage: string }) {
-    return this.promptsService.translate(body.text);
+    return this.promptsService.translate(body.text, body.targetLanguage);
   }
 
   @Post('summarize')

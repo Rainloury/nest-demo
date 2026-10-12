@@ -8,8 +8,8 @@ export class ModelsController {
 
   // invoke 普通问答方式，没有流式输出
   @Post('chat')
-  baseChat(@Body() body: { message: string }) {
-    const response = this.modelsService.baseChat(body.message);
+  async baseChat(@Body() body: { message: string }) {
+    const response = await this.modelsService.baseChat(body.message);
     return { response };
   }
 
