@@ -10,7 +10,7 @@ export class ModelsService {
   // 创建ollama实例
   private llm = new ChatOllama({
     model: config.ollama.chatModel,
-    baseUrl: config.ollama.host,
+    baseUrl: config.ollama.baseUrl,
     temperature: config.ollama.temperature,
     think: false,
     numPredict: 512,

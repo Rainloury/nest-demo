@@ -9,6 +9,7 @@ import { PrismaService } from './../src/prisma/prisma.service.ts';
 const mockPrisma = {
   $connect: vi.fn().mockResolvedValue(undefined),
   $disconnect: vi.fn().mockResolvedValue(undefined),
+  $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
 };
 
 describe('AppController (e2e)', () => {
@@ -26,8 +27,20 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer()).get('/').expect(200).expect('Hello World!');
+  it('/health (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/health')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toMatchObject({
+          success: true,
+          message: '服务健康',
+          data: {
+            status: 'ok',
+            database: 'up',
+          },
+        });
+      });
   });
 
   it('/user/user (GET)', () => {

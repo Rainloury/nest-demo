@@ -8,7 +8,7 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 export class PromptsService {
   private llm = new ChatOllama({
     model: config.ollama.chatModel,
-    baseUrl: config.ollama.host,
+    baseUrl: config.ollama.baseUrl,
     temperature: config.ollama.temperature,
     think: false,
     numPredict: 512,

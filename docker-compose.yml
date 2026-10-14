@@ -1,7 +1,6 @@
 # docker-compose.yml
 # 定义整个应用的所有服务（NestJS + PostgreSQL + Nginx）
-
-version: '3.8'
+# 注意：Compose v2 已废弃顶层 version 字段，写了会报 obsolete 警告，所以不写
 
 services:
   # ── PostgreSQL 18 数据库服务 ──────────────────────────────
@@ -12,7 +11,13 @@ services:
     container_name: nestjs_postgres
     # 容器崩溃或服务器重启后自动重启（always = 始终重启）
     restart: always
-    # 环境变量（从 .env.production 文件读取）
+    # 环境变量
+    # 注意：下面这层 environment 里的 ${} 是 compose 的「插值」，
+    # 只读当前目录的 .env 或 `docker compose --env-file xxx` 传入的文件；
+    # 服务级的 env_file 只注入容器内部，不参与插值，别搞混。
+    # 想用 .env.production 里的真实值：
+    #   docker compose --env-file .env.production up -d --build
+    # 不传也能起来（走开发默认值），避免变量缺失导致 postgres 初始化失败。
     environment:
       # 数据库超级用户名
       POSTGRES_USER: ${POSTGRES_USER}
@@ -22,15 +27,19 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     # 数据卷挂载：把数据库文件持久化到宿主机
     # 格式：宿主机路径或卷名:容器内路径
+    # 注意 postgres 18+ 改了布局：单个挂载点要放在 /var/lib/postgresql，
+    # 真实数据落在 /var/lib/postgresql/18/docker 子目录里（便于 pg_upgrade --link）。
+    # 继续挂 /var/lib/postgresql/data 会被官方入口脚本判为「无用挂载」并直接报错退出
+    # （见 docker-library/postgres#1259）。
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     # 网络：加入 app-network 内部网络
     # PostgreSQL 不对外暴露端口，只在内网和 NestJS 通信（更安全）
     networks:
       - app-network
     # 健康检查：确认 PostgreSQL 真正可以接受连接后，NestJS 才启动
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-nest} -d ${POSTGRES_DB:-nestjs}']
       interval: 10s # 每 10 秒检查一次
       timeout: 5s # 超时时间
       retries: 5 # 失败后重试 5 次

@@ -20,6 +20,7 @@ datasource db {
   provider = "postgresql"
 }
 
+// 数据库模型定义
 model User {
   id        Int      @id @default(autoincrement())
   name      String
@@ -43,5 +44,6 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([authorId])
   @@map("posts")
 }

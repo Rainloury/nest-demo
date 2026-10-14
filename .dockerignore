@@ -1,0 +1,20 @@
+# .dockerignore
+# 不参与 docker build 的文件。注意：它不是 .gitignore，是独立的一份清单。
+
+# 本地依赖：pnpm 的 node_modules 是软链 + 私有 store，
+# 拷进镜像会覆盖容器内刚装好的依赖（而且体积数百 MB）
+node_modules
+
+# 本地构建产物：镜像里的 dist 必须由容器内重新编译生成
+dist
+*.tsbuildinfo
+
+# 密钥文件：真实连接串、数据库密码由运行时 env_file 注入，不能打进镜像
+.env
+.env.production
+
+# 仓库元数据与编辑器配置
+.git
+.gitignore
+.vscode
+.DS_Store
